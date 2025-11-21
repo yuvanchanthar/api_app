@@ -25,6 +25,7 @@ class Company {
 
   Map<String, dynamic> toJson() {
     return {
+      
       "name": name,
       "logo": logo,
       "phone": phone,
