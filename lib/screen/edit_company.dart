@@ -1,6 +1,6 @@
 import 'package:api_integration_application/model/company.dart';
 import 'package:api_integration_application/provider/company_provider.dart';
-import 'package:api_integration_application/service/company_service.dart';
+//import 'package:api_integration_application/service/company_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -47,7 +47,7 @@ class _EditCompanyState extends State<EditCompany> {
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.company != null;
+   // final isEditing = widget.company != null;
 
     return Scaffold(
       appBar: AppBar(
