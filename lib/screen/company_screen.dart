@@ -168,38 +168,38 @@ class _CompanyScreenState extends State<CompanyScreen> {
 
       );
     }
+    
+     
+    
     else{
-      return Text("NO IMAGE");
+      return CircleAvatar(
+        radius: 25,
+        backgroundColor: _getColorFromName(company.name),
+        child: Text(company.name.isNotEmpty? company.name[0].toUpperCase():'?',
+        style: TextStyle(fontSize: 20,
+        fontWeight: FontWeight.bold,color: Colors.white),),
+      );
     }
-  //   else{
-  //     return CircleAvatar(
-  //       radius: 25,
-  //       backgroundColor: _getColorFromName(company.name),
-  //       child: Text(company.name.isNotEmpty? company.name[0].toUpperCase():'?',
-  //       style: TextStyle(fontSize: 20,
-  //       fontWeight: FontWeight.bold,color: Colors.white),),
-  //     );
-  //   }
 
-  // }
-  // Color _getColorFromName(String name){
-  //   final colors=[
-  //     Colors.indigo,
-  //     Colors.blue,
-  //     Colors.teal,
-  //     Colors.green,
-  //     Colors.red,
-  //     Colors.purple,
-  //     Colors.pink,
-  //     Colors.cyan,
-  //     Colors.amber,
-  //   ];
-  //   final index=name.hashCode.abs()% colors.length;
-  //   return colors[index];
+  }
+  Color _getColorFromName(String name){
+    final colors=[
+      Colors.indigo,
+      Colors.blue,
+      Colors.teal,
+      Colors.green,
+      Colors.red,
+      Colors.purple,
+      Colors.pink,
+      Colors.cyan,
+      Colors.amber,
+    ];
+    final index=name.hashCode.abs()% colors.length;
+    return colors[index];
 
-  // }
+   }
     
   }
-}
+
 
 
