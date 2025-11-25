@@ -1,5 +1,7 @@
-import 'package:api_integration_application/company_provider.dart';
+//import 'package:api_integration_application/company_provider.dart';
 import 'package:api_integration_application/model/company.dart';
+import 'package:api_integration_application/provider/company_provider.dart';
+import 'package:api_integration_application/screen/edit_company.dart';
 import 'package:api_integration_application/service/company_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -13,132 +15,191 @@ class CompanyScreen extends StatefulWidget {
 }
 
 class _CompanyScreenState extends State<CompanyScreen> {
-  @override void initState() {
+  @override 
+  void initState() {
     
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      
-    },);
-    Provider.of<CompanyProvider>(context, listen: false).getAllCompany();
+    Future.microtask(()=> context.read<CompanyProvider>().fetchCompany());
   }
+  void _navigateToAddScreen()async{
+    final result= await Navigator.push(context, MaterialPageRoute(builder: (_)=>AddCompany()),);
+    if(result==true){
+      _showSnackBar('Company added successfully');
+
+    }
+  }
+  void _navigateToEditScreen(Company company)async{
+    final result= await Navigator.push(context, MaterialPageRoute(builder: (_)=>EditCompany(company: company)));
+    if(result==true){
+      _showSnackBar('Company updated successfully');
+    }
+  }
+  void _deleteCompany(Company company)async{
+    showDialog(context: context, builder: (_)=>AlertDialog(
+      title: Text("Delete Company"),
+      content: Text("Are you sure want to delete ${company.name}?"),
+      actions: [
+        TextButton(onPressed: ()=> Navigator.pop(context), child: Text("cancel")),
+        ElevatedButton(style: 
+          ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          onPressed: ()async{
+          Navigator.pop(context);
+          final success= await context.read<CompanyProvider>().deletedCompany(company.id!);
+          if(success){
+        _showSnackBar("Company delete successfully");
+
+          }
+        }, child: Text("Delete",style: TextStyle(color: Colors.white),))
+      ],
+    ));
+  }
+  void _showSnackBar(String message)async{
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.lightBlueAccent,
-        title: const Text("Companies"),
-        centerTitle: true,
-      ),
-
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const CreateCompany(),
-            ),
-          ).then((_) => setState(() {}));
-        },
-        child: const Icon(Icons.add),
-      ),
-
-      body: Consumer<CompanyProvider>(builder: (context, value, child) {
-        return 
-      
-        FutureBuilder(
-          future: CompanyService().getAllCompany(),
-          builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return const Center(child: Text("Error loading data"));
-            }
-        
-            if (!snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
-        
-            final List<Company> companies = snapshot.data!;
-        
-            return ListView.builder(
-              itemCount: companies.length,
-              itemBuilder: (context, index) {
-                final company = companies[index];
-        
-                return Card(
-                  elevation: 2,
-                  margin: const EdgeInsets.all(8),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage: NetworkImage(
-                        company.logo ??
-                            "https://logo.clearbit.com/google.com",
-                      ),
-                    ),
-                    title: Text(company.name ?? "No name"),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(company.phone ?? "No phone"),
-                        Text(company.address ?? "No address"),
-                      ],
-                    ),
-        
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => CreateCompany(company: company),
-                              ),
-                            ).then((_) => setState(() {}));
-                          },
-                        ),
-        
-                        
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () {
-                            _confirmDelete(company.id!);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-          },
+    return Scaffold(appBar: AppBar(
+      backgroundColor: Colors.blue[100],
+      centerTitle: true,
+      title: Text("Companies"),
+      actions: [
+        IconButton(onPressed: ()=> context.read<CompanyProvider>().fetchCompany(), icon: Icon(Icons.refresh)),
+      ],
+    ),
+    body: Consumer<CompanyProvider>(builder: (context, provider, child){
+      if(provider.isLoading && provider.companys.isEmpty){
+        return Center(child: CircularProgressIndicator(),);
+      }
+      if(provider.error != null && provider.companys.isEmpty){
+        return Center(
+          child: Column(children: [
+            Icon(Icons.error_outline, size: 48,color: Colors.red,),
+            SizedBox(height: 16,),
+            ElevatedButton(onPressed: ()=>provider.fetchCompany(), child: Text("Retry"),)
+          ],),
         );
-  }),
+      }
+      if(provider.companys.isEmpty){
+        return Center(child: Column(
+          children: [
+            Icon(Icons.business,size: 80,color: Colors.grey[600],),
+            SizedBox(height: 20,),
+            Text("Tap + button to add your first company"),
+          ],
+        ),);
+      }
+      return ListView.builder(
+        itemCount: provider.companys.length,
+        itemBuilder: (context, index){
+        final company=provider.companys[index];
+        return Card(
+          elevation: 2,
+          margin: EdgeInsets.symmetric(vertical: 4,horizontal: 8),
+          child: ListTile(
+            leading: _buildCompanyLogo(company),
+            title: Text(
+              company.name,
+              style: TextStyle(
+                fontWeight: FontWeight.bold),),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4,),
+                Row(
+                  children: [
+                    Icon(Icons.phone,
+                 size: 14,color: Colors.grey,),
+                SizedBox(width: 4,),
+                Text(company.phone),
+                  ],
+                ),
+                SizedBox(height: 2,),
+                Row(children: [
+                  Icon(Icons.location_on,size: 14,color: Colors.grey,),
+                  const SizedBox(width: 4),
+                  Expanded(child: Text(company.address)),
+
+                ],)
+                
+              ],),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(onPressed: ()=>_navigateToEditScreen(company), icon: Icon(Icons.edit)),
+                  IconButton(onPressed: ()=> _deleteCompany(company), icon: Icon(Icons.delete)
+                  ),
+
+                ],
+              ),
+              isThreeLine: true,
+               
+          ),
+
+        );
+      }
+      );
+    }
+    
+      
+    
+    ),
+    floatingActionButton: FloatingActionButton.extended(onPressed: _navigateToAddScreen, label: Text("Add Company"),
+    icon: Icon(Icons.add),),
     );
   }
 
-  void _confirmDelete(int id) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Delete Company"),
-        content: const Text("Are you sure you want to delete this company?"),
-        actions: [
-          TextButton(
-            child: const Text("No"),
-            onPressed: () => Navigator.pop(context),
-          ),
-          TextButton(
-            child: const Text("Yes"),
-            onPressed: () async {
-              await CompanyService().deleteCompany(id);
-              Navigator.pop(context);
-              setState(() {});
-            },
-          ),
-        ],
-      ),
-    );
+  Widget _buildCompanyLogo(Company company){
+    if(company.logo != null && company.logo!.isNotEmpty){
+      return CircleAvatar(
+        radius: 25,
+        backgroundColor: Colors.grey[300],
+        backgroundImage: NetworkImage(company.logo!),
+        onBackgroundImageError: (exception, stackTrace) {
+          debugPrint('Failed to load logo: $exception');
+        },
+        child: company.logo!.startsWith('http')? null
+        : Text(company.name.isNotEmpty ? company.name[0].toUpperCase() :'?',
+        style: TextStyle(fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: Colors.white),
+        ),
+
+      );
+    }
+    else{
+      return Text("NO IMAGE");
+    }
+  //   else{
+  //     return CircleAvatar(
+  //       radius: 25,
+  //       backgroundColor: _getColorFromName(company.name),
+  //       child: Text(company.name.isNotEmpty? company.name[0].toUpperCase():'?',
+  //       style: TextStyle(fontSize: 20,
+  //       fontWeight: FontWeight.bold,color: Colors.white),),
+  //     );
+  //   }
+
+  // }
+  // Color _getColorFromName(String name){
+  //   final colors=[
+  //     Colors.indigo,
+  //     Colors.blue,
+  //     Colors.teal,
+  //     Colors.green,
+  //     Colors.red,
+  //     Colors.purple,
+  //     Colors.pink,
+  //     Colors.cyan,
+  //     Colors.amber,
+  //   ];
+  //   final index=name.hashCode.abs()% colors.length;
+  //   return colors[index];
+
+  // }
+    
   }
 }
+
 

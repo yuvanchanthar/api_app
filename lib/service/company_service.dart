@@ -5,13 +5,13 @@ import 'package:http/http.dart' as http;
 
 class CompanyService {
 
-  final String baseUrl = "https://retoolapi.dev/V3Cg3f/company";
+  final String baseUrl = "https://retoolapi.dev/7VhPDU/data";
 
   Future<List<Company>> getAllCompany() async {
     final response = await http.get(Uri.parse(baseUrl));
 
     if (response.statusCode == 200) {
-      List jsonList = jsonDecode(response.body);
+      List<dynamic> jsonList = jsonDecode(response.body);
       return jsonList.map((data) => Company.fromJson(data)).toList();
     } else {
       throw Exception("Failed to load companies");
@@ -19,28 +19,51 @@ class CompanyService {
   }
 
  
-  Future<bool> createCompany(Company company) async {
+  Future<Company> createCompany(Company company) async {
     final response = await http.post(
       Uri.parse(baseUrl),
-      body: company.toJson(),
-    );
+      headers: {"Content-Type":"application/json"},
+      body: jsonEncode(company.toJson())
 
-    return response.statusCode == 200 || response.statusCode == 201;
+     
+    );
+    if(response.statusCode==201){
+      final data=jsonDecode(response.body);
+      return company.copyWith(id: data['id']);
+    }
+    else{
+      throw Exception("Failed to create company");
+    }
+
+   
   }
 
-  Future<bool> updateCompany(Company company, int id) async {
+  Future<Company> updateCompanys(int id,Company company) async {
     final response = await http.put(
       Uri.parse("$baseUrl/$id"),
-      body: company.toJson(),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(company.toJson()),
     );
+    if(response.statusCode==200){
+      return Company.fromJson(jsonDecode(response.body));
 
-    return response.statusCode == 200 || response.statusCode == 201;
+    }
+    else{
+      throw Exception("Failed to update");
+    }
+
+    
   }
 
  
-  Future<bool> deleteCompany(int id) async {
+  Future<void> deleteCompany(int id) async {
     final response = await http.delete(Uri.parse("$baseUrl/$id"));
+  
+    if(response.statusCode != 200){
+      throw Exception("Failed to delete");
 
-    return response.statusCode == 200 || response.statusCode == 204;
+    }
+
+    
   }
 }
